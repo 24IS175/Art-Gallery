@@ -1,0 +1,193 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art Gallery</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #ffecd2, #fcb69f);
+      color: #333;
+    }header {
+  padding: 1rem;
+  background: #ff9a9e;
+  text-align: center;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+#searchBar {
+  margin: 1rem auto;
+  display: block;
+  padding: 0.5rem;
+  width: 50%;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.artwork {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.artwork:hover {
+  transform: scale(1.05);
+}
+
+.artwork img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.artwork h3 {
+  text-align: center;
+  padding: 0.5rem;
+  background: #ffe0ac;
+  margin: 0;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+  z-index: 999;
+}
+
+.modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: left;
+  animation: slideIn 0.4s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.close-btn {
+  float: right;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #888;
+}
+
+  </style>
+</head><body>
+  <header>
+    <h1>Art Gallery</h1>
+    <input type="text" id="searchBar" placeholder="Search artworks...">
+  </header>
+  <div class="gallery" id="gallery"></div>  <div class="modal" id="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+      <h2 id="modal-title"></h2>
+      <img id="modal-image" style="width:100%; max-height:400px; object-fit:contain;" />
+      <p id="modal-description"></p>
+    </div>
+  </div>  <script>
+    const artworks = [
+      { filename: "the_last_supper.webp", title: "The Last Supper", description: "Leonardo da Vinci’s 'The Last Supper' captures the dramatic moment Jesus announces one of his disciples will betray him. Each apostle reacts differently, reflecting their unique personalities. Painted between 1495 and 1498, this mural in Milan showcases Da Vinci’s mastery of perspective, composition, and human emotion." },
+      { filename: "self_portrait_with_necklace_and_hummingbird.jpg", title: "Self Portrait with Necklace and Hummingbird", description: "Frida Kahlo’s 1940 self-portrait portrays her with a thorn necklace and a dead hummingbird, symbols of pain and resilience. Surrounded by monkeys and foliage, it blends personal suffering with Mexican iconography, emphasizing Kahlo’s complex identity and emotional intensity." },
+      { filename: "diego_on_my_mind.jpg", title: "Diego on My Mind", description: "In this 1943 painting, Frida Kahlo places an image of Diego Rivera on her forehead, symbolizing his constant presence in her thoughts. The fusion of self-portraiture with surreal symbolism reveals her deep love and anguish, exemplifying her emotional honesty and cultural pride." },
+      { filename: "the_bedroom.jpg", title: "The Bedroom", description: "Vincent van Gogh’s 'The Bedroom' (1888) depicts his room in Arles. Its bold colors and distorted perspective convey peace and psychological unrest. Intended as a visual rest for the viewer, the painting also reflects Van Gogh’s yearning for stability." },
+      { filename: "cafe_terrace.jpg", title: "Café Terrace at Night", description: "Van Gogh’s 'Café Terrace at Night' (1888) illustrates a glowing café under a starlit sky. The play of light and shadow, vibrant palette, and absence of black create a warm, inviting ambiance. It captures Van Gogh’s love for nighttime scenes and social spaces." },
+      { filename: "three_musicians.jpg", title: "Three Musicians", description: "Pablo Picasso’s 'Three Musicians' (1921) is a masterwork of Synthetic Cubism. Depicting masked figures playing instruments, the flat planes and vibrant shapes symbolize harmony and performance. It showcases Picasso’s playful yet complex compositional style." },
+      { filename: "the_two_fridas.jpg", title: "The Two Fridas", description: "In this 1939 painting, Frida Kahlo presents two versions of herself—one in a European dress with a bleeding heart, and one in traditional Tehuana attire. The shared artery signifies unity and emotional struggle post-divorce from Diego Rivera. It’s a raw expression of identity and heartbreak." },
+      { filename: "the_wounded_deer.jpg", title: "The Wounded Deer", description: "Frida Kahlo paints herself as a deer struck by arrows in this 1946 work. Symbolizing pain and vulnerability, the fusion of human and animal form reveals her physical and emotional suffering. The forested backdrop evokes isolation and fate." },
+      { filename: "haystacks.jpg", title: "Haystacks", description: "Claude Monet’s 'Haystacks' series exemplifies Impressionist focus on light and atmosphere. Painted at different times of day and seasons, each canvas captures transient effects of sunlight. They reflect Monet’s dedication to studying nature’s changing moods." },
+      { filename: "lady_with_an_ermine.jpg", title: "Lady with an Ermine", description: "Leonardo da Vinci’s 1489 portrait of Cecilia Gallerani holding an ermine blends grace and symbolism. The animal represents purity and Cecilia’s surname pun. The sitter’s poised gaze and the painting’s subtle sfumato showcase da Vinci’s skill in psychological portraiture." },
+      { filename: "wheatfield_with_crows.jpg", title: "Wheatfield with Crows", description: "Painted in July 1890, shortly before Van Gogh’s death, this painting evokes turbulence with a stormy sky, swirling crows, and a winding path. It’s interpreted as a farewell, blending beauty and despair with powerful brushwork and emotional depth." },
+      { filename: "self_portrait_with_cropped_hair.jpg", title: "Self Portrait with Cropped Hair", description: "After her divorce from Diego Rivera, Frida Kahlo painted herself wearing a suit and short hair in 1940. Holding scissors, she defies gender norms and sheds vulnerability. The song lyrics overhead hint at loss and liberation. It’s a bold, personal declaration." },
+      { filename: "the_weeping_woman.jpg", title: "The Weeping Woman", description: "Picasso’s 1937 painting shows a woman crying with anguish. Based on Dora Maar and created after 'Guernica', it symbolizes war’s sorrow. Sharp angles, fractured form, and expressive colors convey intense emotional suffering and loss." },
+      { filename: "baptism_of_christ.jpg", title: "Baptism of Christ", description: "This 1475 painting by Andrea del Verrocchio, with contributions by Leonardo da Vinci, shows Jesus being baptized by John. Angels and a dove complete the divine narrative. Leonardo’s angel is notably graceful, hinting at his future genius." },
+      { filename: "salvator_mundi.jpg", title: "Salvator Mundi", description: "Attributed to Leonardo da Vinci, this painting portrays Christ as the savior of the world, holding a crystal orb. His serene expression and blessing gesture blend realism with spiritual symbolism. Recently rediscovered, it’s among the most debated and valuable artworks." },
+      { filename: "impression_sunrise.jpg", title: "Impression, Sunrise", description: "Monet’s 1872 seascape gave the Impressionist movement its name. Capturing dawn at Le Havre port, it emphasizes light and atmosphere over detail. The hazy composition and vibrant brushwork challenge traditional representation, marking a shift in modern art." },
+      { filename: "girl_before_a_mirror.jpg", title: "Girl Before a Mirror", description: "Picasso’s 1932 painting of his muse Marie-Thérèse Walter explores identity and duality. The girl’s reflection differs from her real image, suggesting internal conflict. Bold colors and distorted forms reflect his Surrealist influences and emotional depth." },
+      { filename: "sunflowers.jpg", title: "Sunflowers", description: "Van Gogh’s 'Sunflowers' series celebrates life, light, and vibrancy. The bold yellows, textured brushwork, and dynamic composition create warmth. These flowers, painted in Arles, represent gratitude and were meant to welcome Gauguin. They remain Van Gogh’s most beloved works." },
+      { filename: "rouen_cathederal.jpg", title: "Rouen Cathedral", description: "Monet painted this gothic cathedral over 30 times at different times of day, capturing changing light and atmosphere. The facades shimmer with impressionistic color. These paintings merge spiritual architecture with nature’s shifting presence, showcasing Monet’s devotion to perception." },
+      { filename: "water_lilies.jpg", title: "Water Lilies", description: "Monet’s 'Water Lilies' series transforms his garden pond into an ethereal world of light and color. The floating blossoms and reflective water invite calm contemplation. With no horizon or depth, the viewer is immersed in pure impression." },
+      { filename: "self_portrait_with_banded_ear.jpg", title: "Self Portrait with Banded Ear", description: "After severing his ear, Van Gogh painted himself with a bandage in 1889. He sits beside an easel, determined to continue. The calm composition contrasts inner turmoil, offering insight into the artist’s suffering and resilience." },
+      { filename: "vitruvian_man.jpg", title: "Vitruvian Man", description: "Da Vinci’s anatomical sketch fuses art and science. A male figure’s proportions align with a circle and square, symbolizing balance. It reflects Renaissance ideals of harmony and the human body’s mathematical beauty." },
+      { filename: "Les_Demoiselles_d'Avignon.jpg", title: "Les Demoiselles d'Avignon", description: "Picasso’s 1907 canvas shattered conventions. Five angular women confront the viewer with raw, mask-like faces. Influenced by African art and Cézanne, it launched Cubism. This provocative piece revolutionized modern art’s direction." },
+      { filename: "starry_night.jpg", title: "Starry Night", description: "Painted from a Saint-Rémy asylum, Van Gogh’s 1889 night sky swirls with celestial energy. The cypress, stars, and moon pulsate in motion. Balancing turbulence and serenity, it’s a visual hymn to the cosmos and emotion." }
+    ];
+
+    const gallery = document.getElementById('gallery');
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalImage = document.getElementById('modal-image');
+    const modalDescription = document.getElementById('modal-description');
+
+    function displayArtworks(filter = '') {
+      gallery.innerHTML = '';
+      artworks
+        .filter(art => art.title.toLowerCase().includes(filter.toLowerCase()))
+        .forEach(art => {
+          const div = document.createElement('div');
+          div.className = 'artwork';
+          div.innerHTML = `
+            <img src="images/${art.filename}" alt="${art.title}">
+            <h3>${art.title}</h3>
+          `;
+          div.onclick = () => openModal(art);
+          gallery.appendChild(div);
+        });
+    }
+
+    function openModal(art) {
+      modalTitle.textContent = art.title;
+      modalImage.src = `images/${art.filename}`;
+      modalDescription.textContent = art.description;
+      modal.classList.add('active');
+    }
+
+    function closeModal() {
+      modal.classList.remove('active');
+    }
+
+    document.getElementById('searchBar').addEventListener('input', e => displayArtworks(e.target.value));
+
+    displayArtworks();
+  </script></body></html>
